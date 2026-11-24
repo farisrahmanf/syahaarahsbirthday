@@ -155,6 +155,23 @@
       }
       updateButtonUI();
     });
+
+    // Nyalakan suara otomatis pada sentuhan/klik pertama di mana saja pada layar
+    let firstInteractionDone = false;
+
+    async function enableSoundOnFirstInteraction() {
+      if (firstInteractionDone) return;
+      firstInteractionDone = true;
+      video.muted = false;
+      try {
+        await video.play();
+      } catch (err) {
+        console.log("Playback error:", err);
+      }
+      updateButtonUI();
+    }
+
+    document.addEventListener("pointerdown", enableSoundOnFirstInteraction, { once: true });
   </script>
 </body>
 </html>
