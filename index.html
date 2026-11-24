@@ -48,7 +48,7 @@
       display: block;
     }
 
-    /* Sembunyikan kontrol bawaan browser agar layar lebih bersih */
+    /* Sembunyikan kontrol bawaan browser agar tampilan lebih bersih */
     video::-webkit-media-controls {
       display: none !important;
     }
@@ -87,7 +87,7 @@
 </head>
 <body>
   <div class="player-wrapper">
-    <!-- Ganti "birthday.mp4" sesuai nama file video Anda -->
+    <!-- Pastikan nama file video sama persis dengan yang ada di repository -->
     <video
       id="birthdayVideo"
       src="birthday.mp4"
@@ -110,6 +110,8 @@
     const soundIcon = document.getElementById("soundIcon");
     const soundText = document.getElementById("soundText");
 
+    let firstInteractionDone = false;
+
     function updateButtonUI() {
       if (video.muted) {
         soundIcon.textContent = "🔇";
@@ -120,8 +122,33 @@
       }
     }
 
+    async function unmuteAndPlay() {
+      video.muted = false;
+      try {
+        await video.play();
+      } catch (err) {
+        console.log("Playback error:", err);
+      }
+      updateButtonUI();
+    }
+
+    // Sentuhan/klik pertama di mana saja pada layar langsung menyalakan suara
+    async function handleFirstInteraction(event) {
+      if (firstInteractionDone) return;
+      firstInteractionDone = true;
+
+      // Jika yang diklik bukan tombol soundToggle, langsung nyalakan suara
+      if (!soundBtn.contains(event.target)) {
+        await unmuteAndPlay();
+      }
+    }
+
+    document.addEventListener("pointerdown", handleFirstInteraction, { once: true });
+
+    // Klik tombol soundToggle untuk toggle mute/unmute kapan saja
     soundBtn.addEventListener("click", async (event) => {
       event.stopPropagation();
+      firstInteractionDone = true;
       video.muted = !video.muted;
       if (!video.muted) {
         try {
@@ -133,8 +160,9 @@
       updateButtonUI();
     });
 
-    // Opsional: tap area video untuk toggle pause/play
+    // Tap area video setelah interaksi pertama untuk pause/play
     video.addEventListener("click", async () => {
+      if (!firstInteractionDone) return;
       if (video.paused) {
         try {
           await video.play();
@@ -146,7 +174,7 @@
       }
     });
 
-    // Pastikan autoplay jalan mulus saat halaman dibuka
+    // Mulai autoplay dalam mode muted saat halaman dimuat
     window.addEventListener("load", async () => {
       try {
         await video.play();
@@ -155,23 +183,6 @@
       }
       updateButtonUI();
     });
-
-    // Nyalakan suara otomatis pada sentuhan/klik pertama di mana saja pada layar
-    let firstInteractionDone = false;
-
-    async function enableSoundOnFirstInteraction() {
-      if (firstInteractionDone) return;
-      firstInteractionDone = true;
-      video.muted = false;
-      try {
-        await video.play();
-      } catch (err) {
-        console.log("Playback error:", err);
-      }
-      updateButtonUI();
-    }
-
-    document.addEventListener("pointerdown", enableSoundOnFirstInteraction, { once: true });
   </script>
 </body>
 </html>
