@@ -22,23 +22,33 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    .player-wrapper {
-      position: relative;
+    .stage {
       width: 100vw;
       height: 100vh;
-      max-width: 520px;
       display: flex;
       justify-content: center;
       align-items: center;
+      padding: 0;
+      position: relative;
+    }
+
+    /* Menjaga rasio 9:16 utuh tanpa memotong bagian tepi video di layar mana pun */
+    .player-wrapper {
+      position: relative;
+      aspect-ratio: 9 / 16;
+      width: min(100vw, calc(100vh * 9 / 16));
+      height: min(100vh, calc(100vw * 16 / 9));
       background-color: #120c10;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       overflow: hidden;
     }
 
-    @media (min-width: 521px) {
+    @media (min-width: 600px) {
       .player-wrapper {
-        height: 96vh;
-        width: auto;
-        aspect-ratio: 9 / 16;
+        width: min(92vw, calc(94vh * 9 / 16));
+        height: min(94vh, calc(92vw * 16 / 9));
         border-radius: 20px;
         box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
       }
@@ -51,9 +61,32 @@
       display: block;
     }
 
-    /* Sembunyikan kontrol bawaan browser agar layar lebih bersih */
     video::-webkit-media-controls {
       display: none !important;
+    }
+
+    /* Indikator loading ringan saat video sedang memuat frame pertama */
+    .loading-badge {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 15;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(20, 20, 20, 0.72);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 500;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 0.25s ease;
+    }
+
+    .loading-badge.hidden {
+      opacity: 0;
     }
 
     .sound-btn {
@@ -89,18 +122,22 @@
   </style>
 </head>
 <body>
-  <div class="player-wrapper">
-    <video
-      id="birthdayVideo"
-      src="birthday.mp4"
-      autoplay
-      loop
-      muted
-      playsinline
-      webkit-playsinline
-      preload="auto"
-    ></video>
+  <div class="stage">
+    <div class="player-wrapper">
+      <video
+        id="birthdayVideo"
+        src="birthday.mp4"
+        autoplay
+        loop
+        muted
+        playsinline
+        webkit-playsinline
+        preload="auto"
+      ></video>
+    </div>
   </div>
+
+  <div id="loadingBadge" class="loading-badge">Memuat video...</div>
 
   <button id="soundToggle" class="sound-btn" type="button" aria-label="Nyalakan atau matikan suara">
     <span id="soundIcon">🔇</span>
@@ -112,6 +149,7 @@
     const soundBtn = document.getElementById("soundToggle");
     const soundIcon = document.getElementById("soundIcon");
     const soundText = document.getElementById("soundText");
+    const loadingBadge = document.getElementById("loadingBadge");
 
     let soundUnlocked = false;
 
@@ -125,12 +163,20 @@
       }
     }
 
+    function hideLoading() {
+      loadingBadge.classList.add("hidden");
+    }
+
+    function showLoading() {
+      loadingBadge.classList.remove("hidden");
+    }
+
     async function ensureMutedAutoplay() {
       video.muted = true;
       try {
         await video.play();
       } catch (err) {
-        // Akan diputar saat ada interaksi pengguna
+        // Akan berjalan saat interaksi pertama pengguna
       }
       updateButtonUI();
     }
@@ -141,7 +187,6 @@
         await video.play();
         soundUnlocked = true;
       } catch (err) {
-        // Jika browser tetap menolak unmute pada event tertentu, tetap lanjutkan playback
         try {
           await video.play();
         } catch (_) {}
@@ -149,7 +194,6 @@
       updateButtonUI();
     }
 
-    // Sentuhan pertama di mana saja pada layar langsung menyalakan suara
     function onAnyFirstGesture(event) {
       if (soundUnlocked) return;
       if (soundBtn.contains(event.target)) return;
@@ -159,7 +203,6 @@
     document.addEventListener("pointerdown", onAnyFirstGesture, { passive: true });
     document.addEventListener("touchstart", onAnyFirstGesture, { passive: true });
 
-    // Tombol sudut kanan bawah untuk toggle mute/unmute
     soundBtn.addEventListener("click", async (event) => {
       event.stopPropagation();
       if (video.muted) {
@@ -170,7 +213,6 @@
       }
     });
 
-    // Setelah suara aktif, tap area video untuk pause/play
     video.addEventListener("click", async () => {
       if (!soundUnlocked) {
         await enableSoundNow();
@@ -184,6 +226,12 @@
         video.pause();
       }
     });
+
+    // Kelola status indikator loading agar pengguna tahu video sedang siap
+    video.addEventListener("loadeddata", hideLoading);
+    video.addEventListener("canplay", hideLoading);
+    video.addEventListener("playing", hideLoading);
+    video.addEventListener("waiting", showLoading);
 
     window.addEventListener("load", ensureMutedAutoplay);
     document.addEventListener("DOMContentLoaded", ensureMutedAutoplay);
