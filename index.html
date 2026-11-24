@@ -26,29 +26,32 @@
       position: relative;
       width: 100vw;
       height: 100vh;
-      max-width: 480px;
-      aspect-ratio: 9 / 16;
-      background-color: #000;
+      max-width: 520px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #120c10;
       overflow: hidden;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
     }
 
-    @media (min-width: 481px) {
+    @media (min-width: 521px) {
       .player-wrapper {
-        height: 94vh;
+        height: 96vh;
         width: auto;
+        aspect-ratio: 9 / 16;
         border-radius: 20px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
       }
     }
 
     video {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       display: block;
     }
 
-    /* Sembunyikan kontrol bawaan browser agar tampilan lebih bersih */
+    /* Sembunyikan kontrol bawaan browser agar layar lebih bersih */
     video::-webkit-media-controls {
       display: none !important;
     }
@@ -87,7 +90,6 @@
 </head>
 <body>
   <div class="player-wrapper">
-    <!-- Pastikan nama file video sama persis dengan yang ada di repository -->
     <video
       id="birthdayVideo"
       src="birthday.mp4"
@@ -95,6 +97,7 @@
       loop
       muted
       playsinline
+      webkit-playsinline
       preload="auto"
     ></video>
   </div>
@@ -110,7 +113,7 @@
     const soundIcon = document.getElementById("soundIcon");
     const soundText = document.getElementById("soundText");
 
-    let firstInteractionDone = false;
+    let soundUnlocked = false;
 
     function updateButtonUI() {
       if (video.muted) {
@@ -122,67 +125,68 @@
       }
     }
 
-    async function unmuteAndPlay() {
-      video.muted = false;
+    async function ensureMutedAutoplay() {
+      video.muted = true;
       try {
         await video.play();
       } catch (err) {
-        console.log("Playback error:", err);
+        // Akan diputar saat ada interaksi pengguna
       }
       updateButtonUI();
     }
 
-    // Sentuhan/klik pertama di mana saja pada layar langsung menyalakan suara
-    async function handleFirstInteraction(event) {
-      if (firstInteractionDone) return;
-      firstInteractionDone = true;
-
-      // Jika yang diklik bukan tombol soundToggle, langsung nyalakan suara
-      if (!soundBtn.contains(event.target)) {
-        await unmuteAndPlay();
-      }
-    }
-
-    document.addEventListener("pointerdown", handleFirstInteraction, { once: true });
-
-    // Klik tombol soundToggle untuk toggle mute/unmute kapan saja
-    soundBtn.addEventListener("click", async (event) => {
-      event.stopPropagation();
-      firstInteractionDone = true;
-      video.muted = !video.muted;
-      if (!video.muted) {
+    async function enableSoundNow() {
+      video.muted = false;
+      try {
+        await video.play();
+        soundUnlocked = true;
+      } catch (err) {
+        // Jika browser tetap menolak unmute pada event tertentu, tetap lanjutkan playback
         try {
           await video.play();
-        } catch (err) {
-          console.log("Playback error:", err);
-        }
+        } catch (_) {}
       }
       updateButtonUI();
+    }
+
+    // Sentuhan pertama di mana saja pada layar langsung menyalakan suara
+    function onAnyFirstGesture(event) {
+      if (soundUnlocked) return;
+      if (soundBtn.contains(event.target)) return;
+      enableSoundNow();
+    }
+
+    document.addEventListener("pointerdown", onAnyFirstGesture, { passive: true });
+    document.addEventListener("touchstart", onAnyFirstGesture, { passive: true });
+
+    // Tombol sudut kanan bawah untuk toggle mute/unmute
+    soundBtn.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      if (video.muted) {
+        await enableSoundNow();
+      } else {
+        video.muted = true;
+        updateButtonUI();
+      }
     });
 
-    // Tap area video setelah interaksi pertama untuk pause/play
+    // Setelah suara aktif, tap area video untuk pause/play
     video.addEventListener("click", async () => {
-      if (!firstInteractionDone) return;
+      if (!soundUnlocked) {
+        await enableSoundNow();
+        return;
+      }
       if (video.paused) {
         try {
           await video.play();
-        } catch (err) {
-          console.log("Play error:", err);
-        }
+        } catch (_) {}
       } else {
         video.pause();
       }
     });
 
-    // Mulai autoplay dalam mode muted saat halaman dimuat
-    window.addEventListener("load", async () => {
-      try {
-        await video.play();
-      } catch (err) {
-        console.log("Autoplay muted fallback:", err);
-      }
-      updateButtonUI();
-    });
+    window.addEventListener("load", ensureMutedAutoplay);
+    document.addEventListener("DOMContentLoaded", ensureMutedAutoplay);
   </script>
 </body>
 </html>
