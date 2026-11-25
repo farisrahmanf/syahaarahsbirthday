@@ -37,9 +37,8 @@
     video {
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      object-fit: cover;
       display: block;
-      background-color: transparent;
     }
 
     video::-webkit-media-controls {
@@ -48,22 +47,23 @@
 
     .tap-badge {
       position: fixed;
-      bottom: calc(20px + env(safe-area-inset-bottom));
+      bottom: calc(22px + env(safe-area-inset-bottom));
       left: 50%;
       transform: translateX(-50%);
       z-index: 20;
-      padding: 8px 16px;
+      padding: 9px 18px;
       border-radius: 999px;
-      background: rgba(24, 24, 24, 0.72);
+      background: rgba(24, 24, 24, 0.78);
       color: #ffffff;
       font-size: 12.5px;
-      font-weight: 600;
-      letter-spacing: 0.2px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       pointer-events: none;
       transition: opacity 0.25s ease;
       white-space: nowrap;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
     }
 
     .tap-badge.hidden {
@@ -83,7 +83,7 @@
     ></video>
   </div>
 
-  <div id="tapBadge" class="tap-badge">Ketuk layar untuk memutar</div>
+  <div id="tapBadge" class="tap-badge">KETUK LAYAR CUPIWKU SAYANG</div>
 
   <script>
     const screenArea = document.getElementById("screenArea");
@@ -96,7 +96,7 @@
       if (!video.paused) {
         tapBadge.classList.add("hidden");
       } else {
-        tapBadge.textContent = hasStartedOnce ? "Ketuk layar untuk lanjut" : "Ketuk layar untuk memutar";
+        tapBadge.textContent = hasStartedOnce ? "KETUK LAYAR CUPIWKU SAYANG" : "KETUK LAYAR CUPIWKU SAYANG";
         tapBadge.classList.remove("hidden");
       }
     }
