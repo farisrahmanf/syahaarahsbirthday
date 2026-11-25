@@ -14,48 +14,24 @@
 
     html, body {
       width: 100%;
-      height: 100dvh;
-      min-height: 100vh;
+      height: 100%;
+      min-height: 100dvh;
       background-color: #f6eef1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    .stage {
+    .screen {
+      position: fixed;
+      inset: 0;
       width: 100%;
       height: 100dvh;
       display: flex;
       justify-content: center;
       align-items: center;
-      position: relative;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    }
-
-    .player-wrapper {
-      position: relative;
-      aspect-ratio: 9 / 16;
-      width: min(100vw, calc(100dvh * 9 / 16));
-      height: min(100dvh, calc(100vw * 16 / 9));
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
       background-color: #f6eef1;
-    }
-
-    @media (min-width: 640px) {
-      body {
-        background-color: #161114;
-      }
-      .player-wrapper {
-        width: min(92vw, calc(92dvh * 9 / 16));
-        height: min(92dvh, calc(92vw * 16 / 9));
-        border-radius: 22px;
-        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
-      }
+      cursor: pointer;
+      user-select: none;
     }
 
     video {
@@ -63,175 +39,92 @@
       height: 100%;
       object-fit: contain;
       display: block;
+      background-color: transparent;
     }
 
     video::-webkit-media-controls {
       display: none !important;
     }
 
-    .sound-btn {
+    .tap-badge {
       position: fixed;
-      bottom: calc(22px + env(safe-area-inset-bottom));
-      right: 18px;
-      z-index: 30;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 10px 15px;
-      border: none;
+      bottom: calc(20px + env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      padding: 8px 16px;
       border-radius: 999px;
-      background: rgba(24, 24, 24, 0.82);
+      background: rgba(24, 24, 24, 0.72);
       color: #ffffff;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
       letter-spacing: 0.2px;
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      cursor: pointer;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-      transition: transform 0.14s ease, background 0.2s ease;
-    }
-
-    .sound-btn:active {
-      transform: scale(0.95);
-    }
-
-    .sound-hint {
-      position: fixed;
-      bottom: calc(64px + env(safe-area-inset-bottom));
-      right: 18px;
-      z-index: 25;
-      padding: 6px 11px;
-      border-radius: 999px;
-      background: rgba(24, 24, 24, 0.65);
-      color: #ffffff;
-      font-size: 11px;
-      font-weight: 500;
       pointer-events: none;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.25s ease;
+      white-space: nowrap;
     }
 
-    .sound-hint.hidden {
+    .tap-badge.hidden {
       opacity: 0;
     }
   </style>
 </head>
 <body>
-  <div class="stage">
-    <div class="player-wrapper">
-      <video
-        id="birthdayVideo"
-        src="birthday.mp4"
-        autoplay
-        loop
-        muted
-        playsinline
-        webkit-playsinline
-        preload="metadata"
-      ></video>
-    </div>
+  <div id="screenArea" class="screen" role="button" tabindex="0" aria-label="Ketuk layar untuk memutar atau menjeda video">
+    <video
+      id="birthdayVideo"
+      src="birthday.mp4"
+      loop
+      playsinline
+      webkit-playsinline
+      preload="metadata"
+    ></video>
   </div>
 
-  <div id="soundHint" class="sound-hint">Ketuk layar untuk suara</div>
-
-  <button id="soundToggle" class="sound-btn" type="button" aria-label="Nyalakan atau matikan suara">
-    <span id="soundIcon">🔇</span>
-    <span id="soundText">Tap for Sound</span>
-  </button>
+  <div id="tapBadge" class="tap-badge">Ketuk layar untuk memutar</div>
 
   <script>
+    const screenArea = document.getElementById("screenArea");
     const video = document.getElementById("birthdayVideo");
-    const soundBtn = document.getElementById("soundToggle");
-    const soundIcon = document.getElementById("soundIcon");
-    const soundText = document.getElementById("soundText");
-    const soundHint = document.getElementById("soundHint");
+    const tapBadge = document.getElementById("tapBadge");
 
-    let userInteracted = false;
+    let hasStartedOnce = false;
 
-    function syncUI() {
-      if (video.muted) {
-        soundIcon.textContent = "🔇";
-        soundText.textContent = "Tap for Sound";
+    function updateBadge() {
+      if (!video.paused) {
+        tapBadge.classList.add("hidden");
       } else {
-        soundIcon.textContent = "🔊";
-        soundText.textContent = "Sound On";
-        soundHint.classList.add("hidden");
+        tapBadge.textContent = hasStartedOnce ? "Ketuk layar untuk lanjut" : "Ketuk layar untuk memutar";
+        tapBadge.classList.remove("hidden");
       }
     }
 
-    async function startMutedPlayback() {
-      video.muted = true;
-      try {
-        await video.play();
-      } catch (_) {}
-      syncUI();
-    }
-
-    async function unmuteAndPlay() {
-      video.muted = false;
-      userInteracted = true;
-      try {
-        await video.play();
-      } catch (_) {
-        video.muted = true;
-        try {
-          await video.play();
-        } catch (__) {}
-      }
-      syncUI();
-    }
-
-    // Sentuhan pertama di area mana pun langsung menyalakan suara
-    function handleFirstTap(e) {
-      if (userInteracted) return;
-      if (soundBtn.contains(e.target)) return;
-      unmuteAndPlay();
-    }
-
-    document.addEventListener("pointerdown", handleFirstTap, { passive: true });
-    document.addEventListener("touchstart", handleFirstTap, { passive: true });
-
-    soundBtn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      if (video.muted) {
-        await unmuteAndPlay();
-      } else {
-        video.muted = true;
-        syncUI();
-      }
-    });
-
-    // Jika setelah unmute pengguna mengetuk layar lagi, toggle play/pause
-    document.addEventListener("click", async (e) => {
-      if (!userInteracted) return;
-      if (soundBtn.contains(e.target)) return;
+    async function handleScreenTap() {
       if (video.paused) {
+        video.muted = false;
         try {
           await video.play();
-        } catch (_) {}
+          hasStartedOnce = true;
+        } catch (_) {
+          video.muted = true;
+          try {
+            await video.play();
+            hasStartedOnce = true;
+          } catch (__) {}
+        }
       } else {
         video.pause();
       }
-    });
+      updateBadge();
+    }
 
-    // Pastikan video langsung jalan saat dibuka / kembali aktif dari scanner QR
-    ["DOMContentLoaded", "load", "pageshow", "canplay"].forEach((evt) => {
-      window.addEventListener(evt, () => {
-        if (!userInteracted) {
-          startMutedPlayback();
-        } else if (video.paused) {
-          video.play().catch(() => {});
-        }
-      });
-    });
+    screenArea.addEventListener("click", handleScreenTap);
+    video.addEventListener("play", updateBadge);
+    video.addEventListener("pause", updateBadge);
 
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden && video.paused) {
-        video.play().catch(() => {});
-      }
-    });
-
-    syncUI();
+    updateBadge();
   </script>
 </body>
 </html>
