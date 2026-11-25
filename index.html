@@ -83,20 +83,18 @@
     ></video>
   </div>
 
-  <div id="tapBadge" class="tap-badge">KETUK LAYAR CUPIWKU SAYANG</div>
+  <div id="tapBadge" class="tap-badge">❤️ KETUK LAYAR CUPIWKU SAYANG ❤️</div>
 
   <script>
     const screenArea = document.getElementById("screenArea");
     const video = document.getElementById("birthdayVideo");
     const tapBadge = document.getElementById("tapBadge");
 
-    let hasStartedOnce = false;
-
     function updateBadge() {
       if (!video.paused) {
         tapBadge.classList.add("hidden");
       } else {
-        tapBadge.textContent = hasStartedOnce ? "KETUK LAYAR CUPIWKU SAYANG" : "KETUK LAYAR CUPIWKU SAYANG";
+        tapBadge.textContent = "❤️ KETUK LAYAR CUPIWKU SAYANG ❤️";
         tapBadge.classList.remove("hidden");
       }
     }
@@ -106,12 +104,10 @@
         video.muted = false;
         try {
           await video.play();
-          hasStartedOnce = true;
         } catch (_) {
           video.muted = true;
           try {
             await video.play();
-            hasStartedOnce = true;
           } catch (__) {}
         }
       } else {
